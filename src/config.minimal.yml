@@ -1,0 +1,17 @@
+---
+# aws:
+#   access_key_id: whatever
+#   secret_access_key: whatever
+#   s3:
+#     bucket: whatever
+#     bucket_path: whatever
+#   sns:
+#     topic_arn: arn:aws:sns:etc.etc.etc.
+# mysql:
+#   host: localhost
+#   username: root
+#   password:
+#   port: 
+#   database: 
+local_pdfs_path: pdfs
+csv: 'crime_stats.csv'

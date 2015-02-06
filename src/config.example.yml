@@ -1,0 +1,17 @@
+---
+aws:
+  access_key_id: whatever
+  secret_access_key: whatever
+  s3:
+    bucket: mybucket
+    bucket_path: 'compstat_pdfs'
+  sns:
+    topic_arn: arn:aws:sns:region:1234567890:topic-nmae
+mysql:
+  host: localhost
+  username: root
+  password:
+  port: 
+  database: 
+local_pdfs_path: false
+csv: 'crime_stats.csv'

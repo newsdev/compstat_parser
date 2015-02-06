@@ -9,7 +9,7 @@
 require 'active_record'
 require 'activerecord-jdbcmysql-adapter'
 require 'yaml'
-require 'aws-sdk'
+require 'aws-sdk-v1'
 require 'active_support/time'
 
   EXPECTED_REPORTS = 85

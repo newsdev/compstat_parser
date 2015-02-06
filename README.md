@@ -6,14 +6,14 @@ New York Police Department Complaint Statistics Scraper & Parser
 
 This collection of tools scrapes the [N.Y.P.D.'s CompStat site](http://www.nyc.gov/html/nypd/html/crime_prevention/crime_statistics.shtml), downloads the crime stats that are published as PDFs each week for each precinct, then parses them into actual data -- CSVs.
 
-This tool is designed to minimally output a CSV with current-week crime data, but more advanced options are available.
+This tool is designed to minimally output a CSV with current-week crime data, but more advanced options are available too.
 
 After you install this tool (see below), you will be able to download the most recent PDFs from the NYPD's site and generate a CSV.
 
 Installation
 --------------
 
-Run the commands following a `$` on the command line (like Terminal on a Mac). This assumes you have a Ruby version manager (like (RVM)[https://rvm.io/] or [rbenv](https://github.com/sstephenson/rbenv)) and MySQL already installed on your machine.
+Run the commands following a `$` on the command line (like Terminal on a Mac). This assumes you have a Ruby version manager (like [RVM](https://rvm.io/) or [rbenv](https://github.com/sstephenson/rbenv)) and MySQL already installed on your machine.
 
 ````
 $ git clone git@github.com:nytinteractive/compstat_parser.git

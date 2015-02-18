@@ -140,7 +140,8 @@ class CompstatParser
 
     # Save the file to disk and/or S3, if specified in config.yml
     if @config['aws'] && @config['aws']['s3']
-      S3Publisher.publish(@config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(File.join(@config['aws']['s3']['bucket_path'], report.start_date, pdf_basename), data: pdf_data, gzip: false) } if @config['aws'] && !@s3[config['aws']['s3']['bucket']].objects[key].exists?
+      key = File.join(@config['aws']['s3']['bucket_path'], report.start_date, pdf_basename)
+      S3Publisher.publish(@config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(key, data: pdf_data, gzip: false) } if @config['aws'] && !@s3.buckets[@config['aws']['s3']['bucket']].objects[key].exists?
     end
     if @config['local_pdfs_path']
       full_path = File.join(@config['local_pdfs_path'], report.end_date, pdf_basename)

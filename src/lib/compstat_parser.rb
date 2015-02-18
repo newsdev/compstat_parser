@@ -93,7 +93,6 @@ class CompstatParser
 
     # open the PDF
     begin
-      puts pdf_path
       page = (extractor = Tabula::Extraction::ObjectExtractor.new(pdf_path, [1])).extract.first
     rescue java.io.IOException => e
       puts "Failed to open PDF #{e.message}"

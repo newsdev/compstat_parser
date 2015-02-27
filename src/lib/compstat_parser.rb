@@ -48,14 +48,14 @@ RAW_CRIME_HEADERS =['Murder',
 CRIME_HEADER_TRANSLATION = Hash[*RAW_CRIME_HEADERS.zip(CRIME_HEADERS).flatten]
 
 
-
+DEFAULT_NAME = "compstat"
 class CompstatParser
   def initialize(config)
     # setup the places we're going to put our data (MySQL and a CSV for data, S3 for pdfs).
     @config = config
     @mysql_table_names = ["crimes_citywide", "crimes_by_precinct"]
     @csv_output = @config.has_key?("csv") ? @config["csv"] : "crime_stats.csv"
-    open(@csv_output , 'wb'){|f| f << "#{CompStatReport.unique_identifiers}, " + CRIME_HEADERS.join(", ") +', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
+    open(@csv_output , 'wb'){|f| f << "#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, " + CRIME_HEADERS.join(", ") +', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
     AWS.config(access_key_id: @config['aws']['access_key_id'], secret_access_key: @config['aws']['secret_access_key']) if @config['aws']
     ActiveRecord::Base.establish_connection(:adapter => 'jdbcmysql', :host => @config['mysql']['host'], :username => @config['mysql']['username'], :password => @config['mysql']['password'], :port => @config['mysql']['port'], :database => @config['mysql']['database']) unless !@config || !@config['mysql']
     @mysql_table_names.each do |mysql_table_name|
@@ -69,7 +69,7 @@ class CompstatParser
 
   # transform a PDF into the data we want to extract
   def parse_pdf(pdf, pdf_basename, pct=nil)
-    tmp_dir = File.join(Dir::tmpdir, "compstat_pdfs")
+    tmp_dir = File.join(Dir::tmpdir, DEFAULT_NAME)
     Dir.mkdir(tmp_dir) unless Dir.exists?(tmp_dir)
 
     open( pdf_path = File.join(tmp_dir, pdf_basename) , 'wb'){|f| f << pdf} # we need to write the file to disk for Tabula to use it.  
@@ -142,7 +142,7 @@ class CompstatParser
       S3Publisher.publish(@config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(key, data: pdf_data, gzip: false) } if @config['aws'] && !@s3.buckets[@config['aws']['s3']['bucket']].objects[key].exists?
     end
     if @config['local_pdfs_path']
-      full_path = File.join(@config['local_pdfs_path'], report.unique_id, pdf_basename)
+      full_path = File.join(@config['local_pdfs_path'], report.shared_id, pdf_basename)
       FileUtils.mkdir_p( File.dirname full_path )
       FileUtils.copy(report.path, full_path) unless File.exists?(full_path) # don't overwrite
     end
@@ -170,7 +170,7 @@ class CompStatReport
     @crimes = Hash[*@headers.zip(crimes_counts['this_year'].map{|c| c.gsub(",", '').to_i }).flatten]
     @crimes_last_year  = Hash[*@headers.zip((crimes_counts['last_year'] || []).map{|c| c.gsub(",", '').to_i }).flatten]
   end
-  
+
   # for insertion into a database.
   def enquote_if_necessary(method)
     if Hash[*self.class.unique_identifiers.flatten][method] == :integer
@@ -182,6 +182,10 @@ class CompStatReport
 
   def to_a
     self.class.unique_identifiers.map(&:first).map{|field| self.send(field) } + CRIME_HEADERS.map{|h| @crimes[h].to_i} + CRIME_HEADERS.map{|h| @crimes_last_year[h].to_i}
+  end
+
+  def shared_id
+    self.class.unique_identifiers[1..-1].map(&:first).map(&:to_s).join('_')
   end
 
   def unique_id

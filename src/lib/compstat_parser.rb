@@ -48,22 +48,22 @@ RAW_CRIME_HEADERS =['Murder',
 CRIME_HEADER_TRANSLATION = Hash[*RAW_CRIME_HEADERS.zip(CRIME_HEADERS).flatten]
 
 
+
 class CompstatParser
   def initialize(config)
     # setup the places we're going to put our data (MySQL and a CSV for data, S3 for pdfs).
     @config = config
+    @mysql_table_names = ["crimes_citywide", "crimes_by_precinct"]
     @csv_output = @config.has_key?("csv") ? @config["csv"] : "crime_stats.csv"
-    open(@csv_output , 'wb'){|f| f << "precinct, start_date, end_date, " + CRIME_HEADERS.join(", ") +', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
+    open(@csv_output , 'wb'){|f| f << "#{CompStatReport.unique_identifiers}, " + CRIME_HEADERS.join(", ") +', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
     AWS.config(access_key_id: @config['aws']['access_key_id'], secret_access_key: @config['aws']['secret_access_key']) if @config['aws']
     ActiveRecord::Base.establish_connection(:adapter => 'jdbcmysql', :host => @config['mysql']['host'], :username => @config['mysql']['username'], :password => @config['mysql']['password'], :port => @config['mysql']['port'], :database => @config['mysql']['database']) unless !@config || !@config['mysql']
-    ActiveRecord::Base.connection.execute("CREATE TABLE IF NOT EXISTS crimes_by_precinct(precinct varchar(30), start_date datetime, end_date datetime, "+
-      CRIME_HEADERS.join(" integer,")+" integer, " +
-      CRIME_HEADERS.join("_last_year integer,")+"_last_year integer" +
-      ")") if @config["mysql"]
-    ActiveRecord::Base.connection.execute("CREATE TABLE IF NOT EXISTS crimes_citywide(precinct varchar(30), start_date datetime, end_date datetime, "+
-      CRIME_HEADERS.join(" integer,")+" integer, " +
-      CRIME_HEADERS.join("_last_year integer,")+"_last_year integer" +
-      ")") if @config["mysql"]
+    @mysql_table_names.each do |mysql_table_name|
+      ActiveRecord::Base.connection.execute("CREATE TABLE IF NOT EXISTS #{mysql_table_name}(#{CompStatReport.unique_identifiers.map{|col, type| "#{col} #{type}"}.join(',') }, "+
+        CRIME_HEADERS.join(" integer,")+" integer, " +
+        CRIME_HEADERS.join("_last_year integer,")+"_last_year integer" +
+        ")") if @config["mysql"]
+    end
     @s3 = AWS::S3.new
   end
 
@@ -119,12 +119,12 @@ class CompstatParser
     return if report.nil?
 
     # if this report is already in the database, don't put it in the DB (and assume it exists in S3, perhaps under another date)
-    table_name = report.precinct == 'city' ? 'crimes_citywide' : 'crimes_by_precinct'
-    return if @config['mysql'] && ActiveRecord::Base.connection.active? && !ActiveRecord::Base.connection.execute("SELECT * FROM #{table_name} WHERE precinct = '#{report.precinct}' AND end_date = '#{report.end_date}'").empty?
+    table_name = report.precinct == 'city' ? @mysql_table_names[0] : @mysql_table_names[0]
+    return if @config['mysql'] && ActiveRecord::Base.connection.active? && !ActiveRecord::Base.connection.execute("SELECT * FROM #{table_name} WHERE #{CompStatReport.unique_identifiers.map(&:first).map{|key| "#{key} = #{report.enquote_if_necessary(key)}"}.join(" AND ")}").empty?
 
     # add our data to MySQL, if config.yml says to.
     begin
-      ActiveRecord::Base.connection.execute("INSERT INTO #{table_name}(precinct, start_date, end_date, #{CRIME_HEADERS.join(',')+', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ")}) VALUES (" + report.to_csv_row(true)+ ")") if @config['mysql']
+      ActiveRecord::Base.connection.execute("INSERT INTO #{table_name}(#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, #{CRIME_HEADERS.join(',')+', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ")}) VALUES (" + report.to_csv_row(true)+ ")") if @config['mysql']
     rescue ActiveRecord::StatementInvalid => e
       puts "Error: #{pdf_path}"
       puts e.inspect
@@ -134,8 +134,7 @@ class CompstatParser
     # N.B.: If there's no database, you'll get duplicate records in the CSV. 
     open(@csv_output, 'ab'){|f| f << report.to_csv_row + "\n"} if @csv_output
 
-
-    puts "#{pct}: #{report.start_date.gsub("-", '/')}-#{report.end_date.gsub("-", '/')}" if report.start_date && report.end_date
+    puts report.unique_id
 
     # Save the file to disk and/or S3, if specified in config.yml
     if @config['aws'] && @config['aws']['s3']
@@ -143,7 +142,7 @@ class CompstatParser
       S3Publisher.publish(@config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(key, data: pdf_data, gzip: false) } if @config['aws'] && !@s3.buckets[@config['aws']['s3']['bucket']].objects[key].exists?
     end
     if @config['local_pdfs_path']
-      full_path = File.join(@config['local_pdfs_path'], report.end_date, pdf_basename)
+      full_path = File.join(@config['local_pdfs_path'], report.unique_id, pdf_basename)
       FileUtils.mkdir_p( File.dirname full_path )
       FileUtils.copy(report.path, full_path) unless File.exists?(full_path) # don't overwrite
     end
@@ -152,21 +151,41 @@ end
 
 # a class to represent the data contained in each report.
 class CompStatReport
+
+  def self.unique_identifiers
+    [[:precinct, 'varchar(30)'], [:start_date, :datetime], [:end_date, :datetime]]
+  end
+  attr_accessor(:headers, *self.unique_identifiers.map(&:first))
+
   attr_accessor :start_date, :end_date, :precinct, :headers
   attr_reader :crimes, :path, :crimes_last_year
   def initialize pct, start_date, end_date, crimes_counts, path, headers
     @start_date = start_date
-    @end_date = end_date
-    @headers = headers.map{|header| CRIME_HEADER_TRANSLATION[header] }
-    @crimes = Hash[*@headers.zip(crimes_counts['this_year'].map{|c| c.gsub(",", '').to_i }).flatten]
-
-    @crimes_last_year  = Hash[*@headers.zip((crimes_counts['last_year'] || []).map{|c| c.gsub(",", '').to_i }).flatten]
+    @end_date = end_date    
     @precinct = pct
     @path = path
+
+    @headers = headers.map{|header| CRIME_HEADER_TRANSLATION[header] }
+
+    @crimes = Hash[*@headers.zip(crimes_counts['this_year'].map{|c| c.gsub(",", '').to_i }).flatten]
+    @crimes_last_year  = Hash[*@headers.zip((crimes_counts['last_year'] || []).map{|c| c.gsub(",", '').to_i }).flatten]
   end
+  
+  # for insertion into a database.
+  def enquote_if_necessary(method)
+    if Hash[*self.class.unique_identifiers.flatten][method] == :integer
+      send(method)
+    else
+      "'#{send(method)}'"
+    end
+  end  
 
   def to_a
-    [@precinct, @start_date, @end_date] + CRIME_HEADERS.map{|h| @crimes[h].to_i} + CRIME_HEADERS.map{|h| @crimes_last_year[h].to_i}
+    self.class.unique_identifiers.map(&:first).map{|field| self.send(field) } + CRIME_HEADERS.map{|h| @crimes[h].to_i} + CRIME_HEADERS.map{|h| @crimes_last_year[h].to_i}
+  end
+
+  def unique_id
+    self.class.unique_identifiers.map(&:first).map{|m|self.send(m)}.map(&:to_s).join('-')
   end
 
   def to_csv_row(enquote=false)

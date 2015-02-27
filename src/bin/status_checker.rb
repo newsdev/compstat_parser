@@ -12,7 +12,7 @@ require 'yaml'
 require 'aws-sdk-v1'
 require 'active_support/time'
 
-  EXPECTED_REPORTS = 85
+EXPECTED_REPORTS = 85
 
 
 
@@ -33,6 +33,10 @@ if __FILE__ == $0
     count = ActiveRecord::Base.connection.execute("SELECT count(*) as cnt FROM crimes_by_precinct WHERE end_date >= '#{query_start_date}' AND start_date <= '#{query_end_date}'")
     EXPECTED_REPORTS - count[0]['cnt'].to_i
   end
+
+  weeks_we_have = ActiveRecord::Base.connection.execute("select distinct start_date, end_date from crimes_citywide order by start_date desc;")
+
+  last_few_reports = weeks_we_have.map{|row| row['start_date'].to_s[0...10] + " - " + row['end_date'].to_s[0...10]}[0...4]
 
   # check for this week and last week
   this_week = Time.now
@@ -75,6 +79,7 @@ if __FILE__ == $0
 
   # send the email
   message = (messages + okay_messages).join("\n\n")
+  message += "\n Last few reports: \n" + last_few_reports.join("\n")
   subject = "#{subject_emoji}: #{subject_items.join(" and ")}"[0...98]
   snes.publish(message , {subject: subject} ) unless messages.empty?
 end

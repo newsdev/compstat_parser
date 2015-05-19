@@ -1,4 +1,5 @@
 config.yml
+config.private.yml
 pdfs
 crime_stats.csv
 *.csv

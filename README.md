@@ -64,7 +64,7 @@ aws:
     bucket: mybucket
     bucket_path: moving_summonses
   sns:
-    topic_arn: arn:aws:sns:region:1234567890:topic-nmae
+    topic_arn: arn:aws:sns:region:1234567890:topic-name`
 mysql:
   host: localhost
   username: root
@@ -79,7 +79,8 @@ When any of these options are unspecified, they will be silently ignored. (Howev
 
 If MySQL is specified in the config file, two tables will be created (or appended to, if they already exist) in the specified database: `crimes_citywide` and `crimes_by_precinct`. The record layout for each table is identical: citywide summaries are located in `crimes_citywide` and precinct-by-precinct data is in `crimes_by_precinct`.
 
-
+*All of these options can also be specified as ENV variables, flattening their paths, as follows:*
+`AWS_ACCESS_KEY_ID=whatever AWS_SNS_TOPIC_ARN=arn:aws:sns:region:1234567890:topic-name`
 
 Cron
 ----

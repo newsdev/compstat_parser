@@ -9,8 +9,9 @@ require_relative '../lib/compstat_parser.rb'
 
 if __FILE__ == $0
 
-  # initialize the parser
-  config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), '..', 'config.yml')) || {}
+  # load config and initialize parser. config can also be specified as env vars. 
+  config_file_path = File.join(File.dirname(File.expand_path(__FILE__)), '..', 'config.yml')
+  config = File.exists?(config_file_path) ? (YAML::load_file(config_file_path) || {}) : {}
   compstat_parser = CompstatParser.new(config)
   
   # for each set of files

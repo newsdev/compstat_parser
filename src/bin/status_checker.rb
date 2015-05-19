@@ -18,13 +18,14 @@ EXPECTED_REPORTS = 85
 
 if __FILE__ == $0
 
-  # initialize connections to the database and to S3
-  config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), '..', 'config.yml')) || {}
-  raise ArgumentError, "MySQL connection info must be specified in config.yml" if !config || !config['mysql']  
+  # initialize connections to the database and to S3, config can also be set with env vars.
+  config_file_path = File.join(File.dirname(File.expand_path(__FILE__)), '..', 'config.yml')
+  config = File.exists?(config_file_path) ? (YAML::load_file(config_file_path) || {}) : {}
+  raise ArgumentError, "MySQL connection info must be specified in config.yml (or env vars)" if !config || !config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}
   ActiveRecord::Base.establish_connection(:adapter => 'jdbcmysql', :host => config['mysql']['host'], :username => config['mysql']['username'], :password => config['mysql']['password'], :port => config['mysql']['port'], :database => config['mysql']['database']) 
-  AWS.config(access_key_id: config['aws']['access_key_id'], secret_access_key: config['aws']['secret_access_key'])
-  snes = AWS::SNS::Topic.new(config['aws']['sns']['topic_arn'])
-  raise ArgumentError, "AWS SNS topic ARN must be speciifed in config.yml" unless  config['aws']['sns']['topic_arn']
+  AWS.config(access_key_id: ENV["AWS_ACCESS_KEY_ID"] || config['aws']['access_key_id'], secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"] || config['aws']['secret_access_key'])
+  snes = AWS::SNS::Topic.new(ENV["AWS_SNS_TOPIC_ARN"] || config['aws']['sns']['topic_arn'])
+  raise ArgumentError, "AWS SNS topic ARN must be specified in config.yml (or an env var)" unless ENV["AWS_SNS_TOPIC_ARN"] || config['aws']['sns']['topic_arn']
 
   # check if records for the week of a given date exist in the database
   def is_missing_compstats(date_obj)

@@ -54,15 +54,15 @@ class CompstatParser
     # setup the places we're going to put our data (MySQL and a CSV for data, S3 for pdfs).
     @config = config
     @mysql_table_names = ["crimes_citywide", "crimes_by_precinct"]
-    @csv_output = @config.has_key?("csv") ? @config["csv"] : "crime_stats.csv"
+    @csv_output = ENV.has_key?("CSV") ? ENV["CSV"] : (@config.has_key?("csv") ? @config["csv"] : "crime_stats.csv")
     open(@csv_output , 'wb'){|f| f << "#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, " + CRIME_HEADERS.join(", ") +', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
-    AWS.config(access_key_id: @config['aws']['access_key_id'], secret_access_key: @config['aws']['secret_access_key']) if @config['aws']
-    ActiveRecord::Base.establish_connection(:adapter => 'jdbcmysql', :host => @config['mysql']['host'], :username => @config['mysql']['username'], :password => @config['mysql']['password'], :port => @config['mysql']['port'], :database => @config['mysql']['database']) unless !@config || !@config['mysql']
+    AWS.config(access_key_id: ENV["AWS_ACCESS_KEY_ID"] || @config['aws']['access_key_id'], secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"] ||  @config['aws']['secret_access_key']) if ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"].all?{|key| ENV.has_key?(key) } || @config['aws']
+    ActiveRecord::Base.establish_connection(:adapter => 'jdbcmysql', :host => ENV["MYSQL_HOST"] || @config['mysql']['host'], :username => ENV["MYSQL_USERNAME"] || @config['mysql']['username'], :password =>ENV["MYSQL_PASSWORD"] || @config['mysql']['password'], :port => ENV["MYSQL_PORT"] || @config['mysql']['port'], :database => ENV["MYSQL_DATABASE"] ||@config['mysql']['database']) unless !@config || !@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}
     @mysql_table_names.each do |mysql_table_name|
       ActiveRecord::Base.connection.execute("CREATE TABLE IF NOT EXISTS #{mysql_table_name}(#{CompStatReport.unique_identifiers.map{|col, type| "#{col} #{type}"}.join(',') }, "+
         CRIME_HEADERS.join(" integer,")+" integer, " +
         CRIME_HEADERS.join("_last_year integer,")+"_last_year integer" +
-        ")") if @config["mysql"]
+        ")") if @config["mysql"] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}
     end
     @s3 = AWS::S3.new
   end
@@ -120,11 +120,11 @@ class CompstatParser
 
     # if this report is already in the database, don't put it in the DB (and assume it exists in S3, perhaps under another date)
     table_name = report.precinct == 'city' ? @mysql_table_names[0] : @mysql_table_names[0]
-    return if @config['mysql'] && ActiveRecord::Base.connection.active? && !ActiveRecord::Base.connection.execute("SELECT * FROM #{table_name} WHERE #{CompStatReport.unique_identifiers.map(&:first).map{|key| "#{key} = #{report.enquote_if_necessary(key)}"}.join(" AND ")}").empty?
+    return if (@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}) && ActiveRecord::Base.connection.active? && !ActiveRecord::Base.connection.execute("SELECT * FROM #{table_name} WHERE #{CompStatReport.unique_identifiers.map(&:first).map{|key| "#{key} = #{report.enquote_if_necessary(key)}"}.join(" AND ")}").empty?
 
     # add our data to MySQL, if config.yml says to.
     begin
-      ActiveRecord::Base.connection.execute("INSERT INTO #{table_name}(#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, #{CRIME_HEADERS.join(',')+', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ")}) VALUES (" + report.to_csv_row(true)+ ")") if @config['mysql']
+      ActiveRecord::Base.connection.execute("INSERT INTO #{table_name}(#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, #{CRIME_HEADERS.join(',')+', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ")}) VALUES (" + report.to_csv_row(true)+ ")") if (@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)})
     rescue ActiveRecord::StatementInvalid => e
       puts "Error: #{pdf_path}"
       puts e.inspect
@@ -137,12 +137,12 @@ class CompstatParser
     puts report.unique_id
 
     # Save the file to disk and/or S3, if specified in config.yml
-    if @config['aws'] && @config['aws']['s3']
-      key = File.join(@config['aws']['s3']['bucket_path'], report.start_date, pdf_basename)
-      S3Publisher.publish(@config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(key, data: pdf_data, gzip: false) } if @config['aws'] && !@s3.buckets[@config['aws']['s3']['bucket']].objects[key].exists?
+    if (@config['aws'] && @config['aws']['s3']) || ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_BUCKET_PATH", "AWS_S3_BUCKET"].all?{|key| ENV.has_key?(key) }
+      key = File.join(ENV["AWS_S3_BUCKET_PATH"] || @config['aws']['s3']['bucket_path'], report.start_date, pdf_basename)
+      S3Publisher.publish(ENV["AWS_S3_BUCKET"] || @config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(key, data: pdf_data, gzip: false) } if @config['aws'] && !@s3.buckets[@config['aws']['s3']['bucket']].objects[key].exists?
     end
-    if @config['local_pdfs_path']
-      full_path = File.join(@config['local_pdfs_path'], report.shared_id, pdf_basename)
+    if @config['local_pdfs_path'] || ENV["LOCAL_PDFS_PATH"]
+      full_path = File.join(ENV["LOCAL_PDFS_PATH"] || @config['local_pdfs_path'], report.shared_id, pdf_basename)
       FileUtils.mkdir_p( File.dirname full_path )
       FileUtils.copy(report.path, full_path) unless File.exists?(full_path) # don't overwrite
     end

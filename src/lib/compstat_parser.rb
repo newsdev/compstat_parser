@@ -56,8 +56,15 @@ class CompstatParser
     @mysql_table_names = ["crimes_citywide", "crimes_by_precinct"]
     @csv_output = ENV.has_key?("CSV") ? ENV["CSV"] : (@config.has_key?("csv") ? @config["csv"] : "crime_stats.csv")
     open(@csv_output , 'wb'){|f| f << "#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, " + CRIME_HEADERS.join(", ") +', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
-    AWS.config(access_key_id: ENV["AWS_ACCESS_KEY_ID"] || @config['aws']['access_key_id'], secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"] ||  @config['aws']['secret_access_key']) if ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"].all?{|key| ENV.has_key?(key) } || @config['aws']
-    ActiveRecord::Base.establish_connection(:adapter => 'jdbcmysql', :host => ENV["MYSQL_HOST"] || @config['mysql']['host'], :username => ENV["MYSQL_USERNAME"] || @config['mysql']['username'], :password =>ENV["MYSQL_PASSWORD"] || @config['mysql']['password'], :port => ENV["MYSQL_PORT"] || @config['mysql']['port'], :database => ENV["MYSQL_DATABASE"] ||@config['mysql']['database']) unless !@config || !@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}
+    AWS.config(access_key_id: ENV["AWS_ACCESS_KEY_ID"] || (@config && @config['aws'] ? @config['aws']['access_key_id']: nil) , secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"] || (@config && @config['aws'] ? @config['aws']['secret_access_key'] : nil)) if ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"].all?{|key| ENV.has_key?(key) } || @config['aws']
+    ActiveRecord::Base.establish_connection(
+      :adapter => 'jdbcmysql', 
+      :host => ENV["MYSQL_HOST"] || (config && config['mysql'] ? config['mysql']['host'] : nil), 
+      :username => ENV["MYSQL_USERNAME"] || (config && config['mysql'] ? config['mysql']['username'] : nil), 
+      :password => ENV["MYSQL_PASSWORD"] || (config && config['mysql'] ? config['mysql']['password'] : nil), 
+      :port => ENV["MYSQL_PORT"] || (config && config['mysql'] ? config['mysql']['port'] : nil), 
+      :database => ENV["MYSQL_DATABASE"] || (config && config['mysql'] ? config['mysql']['database'] : nil)
+    ) if (@config && !@config['mysql']) || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}
     @mysql_table_names.each do |mysql_table_name|
       ActiveRecord::Base.connection.execute("CREATE TABLE IF NOT EXISTS #{mysql_table_name}(#{CompStatReport.unique_identifiers.map{|col, type| "#{col} #{type}"}.join(',') }, "+
         CRIME_HEADERS.join(" integer,")+" integer, " +
@@ -119,10 +126,14 @@ class CompstatParser
     return if report.nil?
 
     # if this report is already in the database, don't put it in the DB (and assume it exists in S3, perhaps under another date)
-    table_name = report.precinct == 'city' ? @mysql_table_names[0] : @mysql_table_names[0]
-    return if (@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}) && ActiveRecord::Base.connection.active? && !ActiveRecord::Base.connection.execute("SELECT * FROM #{table_name} WHERE #{CompStatReport.unique_identifiers.map(&:first).map{|key| "#{key} = #{report.enquote_if_necessary(key)}"}.join(" AND ")}").empty?
+    table_name = report.precinct == 'city' ? @mysql_table_names[0] : @mysql_table_names[1]
+    return if 
+              ((@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)})) && 
+              ActiveRecord::Base.connection.active? && 
+              !ActiveRecord::Base.connection.execute("SELECT * FROM #{table_name} WHERE #{CompStatReport.unique_identifiers.map(&:first).map{|key| "#{key} = #{report.enquote_if_necessary(key)}"}.join(" AND ")}").empty?
 
-    # add our data to MySQL, if config.yml says to.
+
+    # add our data to MySQL, if config.yml (or env vars) says to.
     begin
       ActiveRecord::Base.connection.execute("INSERT INTO #{table_name}(#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, #{CRIME_HEADERS.join(',')+', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ")}) VALUES (" + report.to_csv_row(true)+ ")") if (@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)})
     rescue ActiveRecord::StatementInvalid => e

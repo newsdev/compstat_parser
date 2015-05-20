@@ -1,0 +1,11 @@
+[Unit]
+Description=compstat_notifier
+
+[Timer]
+OnCalendar=Mon,Fri *-*-* 16:30
+
+[Install]
+WantedBy=timers.target
+
+[X-Fleet]
+Global=true

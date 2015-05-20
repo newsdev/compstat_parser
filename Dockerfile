@@ -29,7 +29,7 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 # these didn't work as ONBUILD, strangely. Idk why. -BJBM
-ADD Gemfile /usr/src/app/
-ADD Gemfile.lock /usr/src/app/
+ADD src/Gemfile /usr/src/app/
+ADD src/Gemfile.lock /usr/src/app/
 RUN bundle install --system
-ADD . /usr/src/app
+ADD src/ /usr/src/app

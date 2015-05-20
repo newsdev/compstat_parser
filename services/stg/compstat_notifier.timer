@@ -2,7 +2,7 @@
 Description=compstat_notifier
 
 [Timer]
-OnCalendar=*-*-* *:*:00
+OnCalendar=Mon,Fri *-*-* 16:30
 
 [Install]
 WantedBy=timers.target

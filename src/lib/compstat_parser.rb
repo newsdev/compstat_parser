@@ -64,7 +64,7 @@ class CompstatParser
       :password => ENV["MYSQL_PASSWORD"] || (config && config['mysql'] ? config['mysql']['password'] : nil), 
       :port => ENV["MYSQL_PORT"] || (config && config['mysql'] ? config['mysql']['port'] : nil), 
       :database => ENV["MYSQL_DATABASE"] || (config && config['mysql'] ? config['mysql']['database'] : nil)
-    ) if (@config && !@config['mysql']) || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}
+    ) if (@config && @config['mysql']) || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)}
     @mysql_table_names.each do |mysql_table_name|
       ActiveRecord::Base.connection.execute("CREATE TABLE IF NOT EXISTS #{mysql_table_name}(#{CompStatReport.unique_identifiers.map{|col, type| "#{col} #{type}"}.join(',') }, "+
         CRIME_HEADERS.join(" integer,")+" integer, " +
@@ -96,6 +96,10 @@ class CompstatParser
     ### pre-2012, the format changed changed: 
     # these aren't used here, but you can adapt this to do so, if you want.
     dates_dimensions = [182.507,292.886,204.364,472.114]
+
+    # June 2015 and after dates_dimensions (courtesy of Lela Prashad)
+    dates_dimensions = [153.7,183.4,184.5,455.8]
+
     this_year_and_last_year_crimes_dimensions = [254.636,124.586,361.736,183.6]
 
     # open the PDF

@@ -97,8 +97,11 @@ class CompstatParser
     # these aren't used here, but you can adapt this to do so, if you want.
     dates_dimensions = [182.507,292.886,204.364,472.114]
 
-    # June 2015 and after dates_dimensions (courtesy of Lela Prashad)
+    # early June 2015 dates_dimensions (courtesy of Lela Prashad)
     dates_dimensions = [153.7,183.4,184.5,455.8]
+
+    # June 22 and after dates_dimensions
+    dates_dimensions = [177.48, 206.4725, 191.25, 382.1175]
 
     this_year_and_last_year_crimes_dimensions = [254.636,124.586,361.736,183.6]
 

@@ -56,7 +56,7 @@ if __FILE__ == $0
   subject_items = []
 
   # compose a message if this week is missing its reports  
-  if (missing_cnt = is_missing_compstats(this_week))
+  if (missing_cnt = is_missing_compstats(this_week)) > 0
     if missing_cnt < EXPECTED_REPORTS
       messages << "Yikes! #{missing_cnt} reports are missing from the compstat scraper for this week (ending #{this_week}). Or maybe something went wrong)."
       subject_emoji ||= "❓👮📉 CompStat:"
@@ -89,5 +89,8 @@ if __FILE__ == $0
   message = (messages + okay_messages).join("\n\n")
   message += "\n Last few reports: \n" + last_few_reports.join("\n")
   subject = "#{subject_emoji}: #{subject_items.join(" and ")}"[0...98]
+  if messages.empty?
+    message = "👮: everything is copacetic within the confines of the compstat precinct"
+  end
   snes.publish(message , {subject: subject} ) unless messages.empty?
 end

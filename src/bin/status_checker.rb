@@ -90,7 +90,10 @@ if __FILE__ == $0
   message += "\n Last few reports: \n" + last_few_reports.join("\n")
   subject = "#{subject_emoji}: #{subject_items.join(" and ")}"[0...98]
   if messages.empty?
-    message = "👮: everything is copacetic within the confines of the compstat precinct"
+    subject = "👮: everything is copacetic within the confines of the compstat precinct"
+    message = "omg lol"
+  else
+    puts "asdf"
   end
   snes.publish(message , {subject: subject} ) unless messages.empty?
 end

@@ -14,11 +14,11 @@ if __FILE__ == $0
   compstat_parser = CompstatParser.new(config)
 
   # scrape each precinct's report from the NYPD site
-  scraper = Upton::Scraper.new("http://www.nyc.gov/html/nypd/html/crime_prevention/crime_statistics.shtml", '.bodytext table td a')
+  scraper = Upton::Scraper.new("http://www.nyc.gov/html/nypd/html/crime_prevention/crime_statistics.shtml", ".bodytext table td a[href$='.pdf']")
   scraper.sleep_time_between_requests = 3
   scraper.debug = false
   # download and extract data from each one
-  scraper.scrape{ |pdf, url| compstat_parser.process(pdf, url) } 
+  scraper.scrape{ |pdf, url| puts url; compstat_parser.process(pdf, url) } 
 
   # and download the citywide report
   citywide_url = 'http://www.nyc.gov/html/nypd/downloads/pdf/crime_statistics/cscity.pdf'

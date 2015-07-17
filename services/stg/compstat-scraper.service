@@ -6,10 +6,10 @@ After=docker.service
 After=context.service
 
 [Service]
-Type=oneshot
+Type=simple
 
 # Pull the current application code.
-ExecStart=/usr/bin/docker pull registry.newsdev.net/compstat_parser:staging
+ExecStartPre=/usr/bin/docker pull registry.newsdev.net/compstat_parser:staging
 
 # Define the core service.
 ExecStart=/opt/bin/context exec -g compstat_parser -t '-e {}' /usr/bin/docker run --rm {} \

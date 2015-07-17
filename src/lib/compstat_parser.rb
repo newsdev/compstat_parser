@@ -157,7 +157,7 @@ class CompstatParser
     # Save the file to disk and/or S3, if specified in config.yml
     if (@config['aws'] && @config['aws']['s3']) || ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_BUCKET_PATH", "AWS_S3_BUCKET"].all?{|key| ENV.has_key?(key) }
       key = File.join(ENV["AWS_S3_BUCKET_PATH"] || @config['aws']['s3']['bucket_path'], report.start_date, pdf_basename)
-      S3Publisher.publish(ENV["AWS_S3_BUCKET"] || @config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(key, data: pdf_data, gzip: false) } if @config['aws'] && !@s3.buckets[@config['aws']['s3']['bucket']].objects[key].exists?
+      S3Publisher.publish(ENV["AWS_S3_BUCKET"] || @config['aws']['s3']['bucket'], {logger: 'faux /dev/null'}){ |p| p.push(key, data: pdf_data, gzip: false) } if (ENV["AWS_S3_BUCKET"] || @config['aws']) && !@s3.buckets[(@config['aws']['s3']['bucket'] || ENV["AWS_S3_BUCKET"])].objects[key].exists?
     end
     if @config['local_pdfs_path'] || ENV["LOCAL_PDFS_PATH"]
       full_path = File.join(ENV["LOCAL_PDFS_PATH"] || @config['local_pdfs_path'], report.shared_id, pdf_basename)

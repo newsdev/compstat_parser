@@ -130,7 +130,7 @@ class CompstatParser
   def process(pdf_data, pdf_path, trash=nil)
     # parse the given PDF
     pdf_basename = pdf_path.split("/")[-1]
-    pct = pdf_basename.split('.pdf')[0].gsub('cs', '').gsub('pct', '').gsub("-en-us-")
+    pct = pdf_basename.split('.pdf')[0].gsub('cs', '').gsub('pct', '').gsub("-en-us-", '')
     report = parse_pdf( pdf_data, pdf_basename, pct )
     return if report.nil?
 

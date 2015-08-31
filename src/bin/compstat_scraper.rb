@@ -21,7 +21,7 @@ if __FILE__ == $0
   scraper.scrape{ |pdf, url| puts url; compstat_parser.process(pdf, url) } 
 
   # and download the citywide report
-  citywide_url = 'http://www.nyc.gov/html/nypd/downloads/pdf/crime_statistics/cscity.pdf'
+  citywide_url = 'http://www.nyc.gov/html/nypd/downloads/pdf/crime_statistics/cs-en-us-city.pdf'
   citywide_pdf = Net::HTTP.get(URI(citywide_url))
   # and extract data from it
   compstat_parser.process(citywide_pdf, citywide_url)

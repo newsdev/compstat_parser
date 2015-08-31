@@ -129,7 +129,8 @@ class CompstatParser
 
   def process(pdf_data, pdf_path, trash=nil)
     # parse the given PDF
-    report = parse_pdf( pdf_data, (pdf_basename = pdf_path.split("/")[-1]), (pct = pdf_basename.split('.pdf')[0].gsub('cs', '').gsub('pct', '') ) )
+    pct = pdf_basename.split('.pdf')[0].gsub('cs', '').gsub('pct', '').gsub("-en-us-")
+    report = parse_pdf( pdf_data, (pdf_basename = pdf_path.split("/")[-1]), pct )
     return if report.nil?
 
     # if this report is already in the database, don't put it in the DB (and assume it exists in S3, perhaps under another date)

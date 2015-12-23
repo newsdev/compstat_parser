@@ -1,18 +1,4 @@
-FROM java:openjdk-7-jdk
-
-##
-#
-# Why all this crap? Because openjdk Java 8 has bad bindings to native libjpeg
-# So we're stuck with Java 7.
-# 
-## 
-
-ENV JRUBY_VERSION 1.7.18
-RUN mkdir /opt/jruby \
-  && curl http://jruby.org.s3.amazonaws.com/downloads/${JRUBY_VERSION}/jruby-bin-${JRUBY_VERSION}.tar.gz \
-  | tar -zxC /opt/jruby --strip-components=1 \
-  && update-alternatives --install /usr/local/bin/ruby ruby /opt/jruby/bin/jruby 1
-ENV PATH /opt/jruby/bin:$PATH
+FROM jruby:9.0-jdk
 
 RUN echo 'gem: --no-rdoc --no-ri' >> /.gemrc
 
@@ -27,6 +13,15 @@ ENV BUNDLE_APP_CONFIG $GEM_HOME
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
+
+# Install kubernetes-secret-env
+ENV KUBERNETES_SECRET_ENV_VERSION=0.0.1-rc0
+RUN \
+  mkdir -p /etc/secret-volume && \
+  cd /usr/local/bin && \
+  curl -fLO https://github.com/buth/kubernetes-secret-env/releases/download/v$KUBERNETES_SECRET_ENV_VERSION/kubernetes-secret-env && \
+  chmod +x kubernetes-secret-env
+
 
 # these didn't work as ONBUILD, strangely. Idk why. -BJBM
 ADD src/Gemfile /usr/src/app/

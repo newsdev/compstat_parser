@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: ouija-notifier
+  name: compstat-scraper
   namespace: adm
   labels:
-    app: ouija-notifier
-    version: v1.0.1
+    app: compstat
+    version: v0.0.1
 spec:
   replicas: 1
   selector:
-    app: ouija-notifier
-    version: v1.0.1
+    app: compstat-scraper
+    version: v0.0.1
   template:
     metadata:
       labels:
-        app: ouija-notifier
-        version: v1.0.1
+        app: compstat-scraper
+        version: v0.0.1
     spec:
       containers:
       - name: ouija
-        image: quay.io/newsdev/ouija:v0.1.1
+        image: quay.io/newsdev/ouija:v0.0.1
         command: ["kubernetes-secret-env", "ruby", "bin/compstat_scraper.rb", "--daemonize"]
         env:
         - name: AWS_S3_REGION

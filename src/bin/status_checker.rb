@@ -119,12 +119,12 @@ if __FILE__ == $0
     START_MINUTE = 30
     DAYS = [1, 5]
     WINDOW = 10
-    puts "waiting for #{START_HOUR}:#{START_MINUTE} "
+    puts "waiting for #{START_HOUR}:#{START_MINUTE.to_s.rjust(2, '0')} "
     while 1
       d = DateTime.now 
-      puts "🎸🤠 it's #{d.hour}:#{d.minute} somewhere 🎸🤠"
+      puts "🎸🤠 it's #{d.hour}:#{d.minute.to_s.rjust(2, '0')} somewhere 🎸🤠"
       if d.hour == START_HOUR && d.minute > START_MINUTE && d.minute < (START_MINUTE + WINDOW) && DAYS.include?(d.wday)
-        puts "oh sweet time to do stuff, it's #{d.hour}:#{d.minute}"
+        puts "oh sweet time to do stuff, it's #{d.hour}:#{d.minute.to_s.rjust(2, '0')}"
         Compstat.notify!
       end
       sleep 60 * WINDOW

@@ -18,8 +18,8 @@ spec:
         version: v0.0.1
     spec:
       containers:
-      - name: ouija
-        image: quay.io/newsdev/ouija:v0.0.1
+      - name: compstat-parser
+        image: quay.io/newsdev/compstat_parser:v0.0.1
         command: ["kubernetes-secret-env", "ruby", "bin/compstat_scraper.rb", "--daemonize"]
         env:
         - name: AWS_S3_REGION
@@ -35,7 +35,7 @@ spec:
         resources:
           limits:
             cpu: 50m
-            memory: 300Mi
+            memory: 800Mi
       volumes:
       - name: secret-volume
         secret:

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: compstat-parser
+  name: compstat-notifier
   namespace: adm
   labels:
     app: compstat
@@ -9,18 +9,18 @@ metadata:
 spec:
   replicas: 1
   selector:
-    app: compstat-parser
+    app: compstat-notifier
     version: v0.0.1
   template:
     metadata:
       labels:
-        app: compstat-parser
+        app: compstat-notifier
         version: v0.0.1
     spec:
       containers:
-      - name: ouija
-        image: quay.io/newsdev/ouija:v0.0.1
-        command: ["kubernetes-secret-env", "ruby", "bin/status_checker", "--daemonize"]
+      - name: compstat-parser
+        image: quay.io/newsdev/compstat_parser:v0.0.1
+        command: ["kubernetes-secret-env", "ruby", "bin/status_checker.rb", "--daemonize"]
         env:
         - name: SNS_TOPIC_ARN
           value: arn:aws:sns:us-east-1:968015921589:compstat-scraper 
@@ -37,7 +37,7 @@ spec:
         resources:
           limits:
             cpu: 50m
-            memory: 300Mi
+            memory: 800Mi
       volumes:
       - name: secret-volume
         secret:

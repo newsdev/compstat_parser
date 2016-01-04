@@ -49,7 +49,7 @@ if __FILE__ == $0
     while 1
       d = DateTime.now 
       puts "🎸🤠 it's #{d.hour}:#{d.minute.to_s.rjust(2, '0')} somewhere 🎸🤠"
-      if d.hour == START_HOUR && d.minute > START_MINUTE && d.minute < (START_MINUTE + WINDOW) && DAYS.include?(d.wday)
+      if d.hour == START_HOUR && d.minute >= START_MINUTE && d.minute < (START_MINUTE + WINDOW) && DAYS.include?(d.wday)
         puts "oh sweet time to do stuff, it's #{d.hour}:#{d.minute.to_s.rjust(2, '0')}"
         Compstat.scrape!
       end

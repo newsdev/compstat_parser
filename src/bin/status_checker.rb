@@ -13,7 +13,7 @@ require 'aws-sdk-v1'
 require 'active_support/time'
 require 'date'
 require 'optparse'
-
+STDOUT.sync = true
 module Compstat
 
   EXPECTED_REPORTS = 85
@@ -92,11 +92,11 @@ module Compstat
     message = (messages + okay_messages).join("\n\n")
     message += "\n Last few reports: \n" + last_few_reports.join("\n")
     subject = "#{subject_emoji}: #{subject_items.join(" and ")}"[0...98]
-    # if messages.empty?
-    #   subject = "👮: everything is copacetic within the confines of the compstat precinct"
-    #   message = "omg lol"
-    # end
     if messages.empty?
+      subject = "👮: everything is copacetic within the confines of the compstat precinct"
+      message = "omg lol"
+    end
+    if !messages.empty?
       snes.publish(message , {subject: subject} ) 
     else
       puts "okay"
@@ -119,10 +119,10 @@ if __FILE__ == $0
     START_MINUTE = 30
     DAYS = [1, 5]
     WINDOW = 10
-    puts "waiting for #{START_HOUR}:#{START_MINUTE.to_s.rjust(2, '0')} "
+    puts "waiting for #{START_HOUR}:#{START_MINUTE.to_s.rjust(2, '0')} on #{DAYS}"
     while 1
       d = DateTime.now 
-      puts "🎸🤠 it's #{d.hour}:#{d.minute.to_s.rjust(2, '0')} somewhere 🎸🤠"
+      puts "🎸🤠 it's #{d.year}-#{d.month}-#{d.day} #{d.hour}:#{d.minute.to_s.rjust(2, '0')} somewhere 🎸🤠"
       if d.hour == START_HOUR && d.minute >= START_MINUTE && d.minute < (START_MINUTE + WINDOW) && DAYS.include?(d.wday)
         puts "oh sweet time to do stuff, it's #{d.hour}:#{d.minute.to_s.rjust(2, '0')}"
         Compstat.notify!

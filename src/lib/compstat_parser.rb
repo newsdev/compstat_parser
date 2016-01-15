@@ -77,7 +77,7 @@ class CompstatParser
   # transform a PDF into the data we want to extract
   def parse_pdf(pdf, pdf_basename, pct=nil)
     tmp_dir = File.join(Dir::tmpdir, DEFAULT_NAME)
-    Dir.mkdir(tmp_dir) unless Dir.exists?(tmp_dir)
+    Dir.mkdir(tmp_dir) unless Dir.exist?(tmp_dir)
 
     open( pdf_path = File.join(tmp_dir, pdf_basename) , 'wb'){|f| f << pdf} # we need to write the file to disk for Tabula to use it.  
     

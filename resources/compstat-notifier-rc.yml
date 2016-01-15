@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: compstat-notifier
+  name: compstat-notifier-v0.0.2
   namespace: adm
   labels:
     app: compstat
-    version: v0.0.1
+    version: v0.0.2
 spec:
   replicas: 1
   selector:
     app: compstat-notifier
-    version: v0.0.1
+    version: v0.0.2
   template:
     metadata:
       labels:
         app: compstat-notifier
-        version: v0.0.1
+        version: v0.0.2
     spec:
       containers:
       - name: compstat-parser
-        image: quay.io/newsdev/compstat_parser:v0.0.1
+        image: quay.io/newsdev/compstat_parser:v0.0.2
         command: ["kubernetes-secret-env", "ruby", "bin/status_checker.rb", "--daemonize"]
         env:
         - name: SNS_TOPIC_ARN

@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: compstat-scraper
+  name: compstat-scraper-v0.0.2
   namespace: adm
   labels:
     app: compstat
-    version: v0.0.1
+    version: v0.0.2
 spec:
   replicas: 1
   selector:
     app: compstat-scraper
-    version: v0.0.1
+    version: v0.0.2
   template:
     metadata:
       labels:
         app: compstat-scraper
-        version: v0.0.1
+        version: v0.0.2
     spec:
       containers:
       - name: compstat-parser
-        image: quay.io/newsdev/compstat_parser:v0.0.1
+        image: quay.io/newsdev/compstat_parser:v0.0.2
         command: ["kubernetes-secret-env", "ruby", "bin/compstat_scraper.rb", "--daemonize"]
         env:
         - name: AWS_S3_REGION

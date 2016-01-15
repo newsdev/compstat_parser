@@ -115,7 +115,7 @@ if __FILE__ == $0
   end.parse!
 
   if options[:daemonize]
-    START_HOUR = 16
+    START_HOUR = 17
     START_MINUTE = 30
     DAYS = [1, 5]
     WINDOW = 10

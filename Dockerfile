@@ -15,11 +15,11 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 # Install kubernetes-secret-env
-ENV KUBERNETES_SECRET_ENV_VERSION=0.0.1-rc0
+ENV KUBERNETES_SECRET_ENV_VERSION=0.0.1
 RUN \
   mkdir -p /etc/secret-volume && \
   cd /usr/local/bin && \
-  curl -fLO https://github.com/buth/kubernetes-secret-env/releases/download/v$KUBERNETES_SECRET_ENV_VERSION/kubernetes-secret-env && \
+  curl -fLO https://github.com/newsdev/kubernetes-secret-env/releases/download/$KUBERNETES_SECRET_ENV_VERSION/kubernetes-secret-env && \
   chmod +x kubernetes-secret-env
 
 

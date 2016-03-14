@@ -43,9 +43,9 @@ if __FILE__ == $0
   end.parse!
 
   if options[:daemonize]
-    START_HOUR = 12
+    START_HOUR = 16
     START_MINUTE = 30
-    DAYS = [1, 4, 5]
+    DAYS = [1, 2, 5]
     WINDOW = 10
     puts "waiting for #{START_HOUR}:#{START_MINUTE.to_s.rjust(2, '0')} on #{DAYS}"
     while 1

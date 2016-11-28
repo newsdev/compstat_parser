@@ -61,7 +61,7 @@ module Compstat
     # compose a message if this week is missing its reports  
     if (missing_cnt = self.is_missing_compstats(last_week)) > 0
       if missing_cnt < EXPECTED_REPORTS
-        messages << "Yikes! #{missing_cnt} reports are missing from the compstat scraper for this week (ending #{last_week}). Or maybe something went wrong)."
+        messages << "Yikes! #{missing_cnt} reports are missing from the compstat scraper for this week (ending #{last_week}). There should be 85. Or maybe something went wrong)."
         subject_emoji ||= "❓👮📉 CompStat:"
         subject_items << "missing reports for this week (#{last_week.to_s[5..9].gsub('-', '/').gsub(/^0*/, '')})"  # only used for email.
       else

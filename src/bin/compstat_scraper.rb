@@ -43,6 +43,7 @@ if __FILE__ == $0
   end.parse!
 
   if options[:daemonize]
+    Compstat.scrape!
     START_HOUR = 16
     START_MINUTE = 30
     DAYS = [1, 2, 5]

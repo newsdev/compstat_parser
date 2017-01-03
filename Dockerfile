@@ -15,7 +15,7 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 # Install kubernetes-secret-env
-ENV KUBERNETES_SECRET_ENV_VERSION=0.0.1
+ENV KUBERNETES_SECRET_ENV_VERSION=0.0.2
 RUN \
   mkdir -p /etc/secret-volume && \
   cd /usr/local/bin && \

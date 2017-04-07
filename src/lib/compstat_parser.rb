@@ -55,7 +55,7 @@ class CompstatParser
     @config = config
     @mysql_table_names = ["crimes_citywide", "crimes_by_precinct"]
     @csv_output = ENV.has_key?("CSV") ? ENV["CSV"] : (@config.has_key?("csv") ? @config["csv"] : "crime_stats.csv")
-    open(@csv_output , 'wb'){|f| f << "#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, " + CRIME_HEADERS.join(", ") +', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
+    open(@csv_output , 'wb'){|f| f << "#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, " + CRIME_HEADERS.join(", ") + ', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ") + "\n"} unless !@csv_output || File.exists?(@csv_output)
     AWS.config(access_key_id: ENV["AWS_ACCESS_KEY_ID"] || (@config && @config['aws'] ? @config['aws']['access_key_id']: nil) , secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"] || (@config && @config['aws'] ? @config['aws']['secret_access_key'] : nil)) if ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"].all?{|key| ENV.has_key?(key) } || @config['aws']
     ActiveRecord::Base.establish_connection(
       :adapter => 'jdbcmysql', 
@@ -144,7 +144,7 @@ class CompstatParser
 
     # add our data to MySQL, if config.yml (or env vars) says to.
     begin
-      ActiveRecord::Base.connection.execute("INSERT INTO #{table_name}(#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, #{CRIME_HEADERS.join(',')+', ' +CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ")}) VALUES (" + report.to_csv_row(true)+ ")") if (@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)})
+      ActiveRecord::Base.connection.execute("INSERT INTO #{table_name}(#{CompStatReport.unique_identifiers.map(&:first).map(&:to_s).join(',')}, #{CRIME_HEADERS.join(',') + ', ' + CRIME_HEADERS.map{|h| "#{h}_last_year"}.join(", ")}) VALUES (" + report.to_csv_row(true) + ")") if (@config['mysql'] || ["MYSQL_HOST","MYSQL_USERNAME","MYSQL_PASSWORD","MYSQL_PORT","MYSQL_DATABASE"].any?{|key| ENV.has_key?(key)})
     rescue ActiveRecord::StatementInvalid => e
       puts "Error: #{pdf_path}"
       puts e.inspect

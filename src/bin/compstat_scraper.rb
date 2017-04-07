@@ -20,7 +20,8 @@ module Compstat
     # scrape each precinct's report from the NYPD site
     scraper = Upton::Scraper.new("http://www.nyc.gov/html/nypd/html/crime_prevention/crime_statistics.shtml", ".bodytext table td a[href$='.pdf']")
     scraper.sleep_time_between_requests = 3
-    scraper.debug = false
+    scraper.debug = true
+    scraper.verbose = true
     # download and extract data from each one
     scraper.scrape{ |pdf, url| puts url; compstat_parser.process(pdf, url) } 
 
